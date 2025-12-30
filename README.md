@@ -2,6 +2,8 @@
 
 A basic macOS app that displays images in a folder as a full-screen slideshow.
 
+[![xcodebuild](https://github.com/shayelkin/slideshow/actions/workflows/xcodebuild.yml/badge.svg)](https://github.com/shayelkin/slideshow/actions/workflows/xcodebuild.yml)
+
 ## Usage
 
 - Build using Xcode, or `xcodebuild` from the command line.
