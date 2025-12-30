@@ -61,7 +61,7 @@ final class Controller {
             openFolder(modifiers.contains(.command))
             return true
         case .escape:
-            NSApplication.shared.terminate(nil)
+            NSApplication.shared.keyWindow?.close()
             return true
         default:
             return false
