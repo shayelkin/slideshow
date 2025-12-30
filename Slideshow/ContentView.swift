@@ -46,10 +46,10 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .focusable()
-        .focused($hasFocus)
         .navigationTitle(controller.windowTitle)
         .navigationDocument(controller.currentFolder)
+        .focusable()
+        .focused($hasFocus)
         .proxy(to: .window) { window in
             guard !controller.inUnitTest else { return }
             if window.styleMask.contains(.fullScreen) == false {
