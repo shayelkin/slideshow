@@ -14,9 +14,9 @@ struct SlideshowApp: App {
         WindowGroup {
             ContentView()
         }
-        .windowStyle(.hiddenTitleBar)
     }
 }
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true

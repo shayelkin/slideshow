@@ -275,6 +275,52 @@ struct ControllerTests {
         }
     }
 
+    // MARK: - Window Title Tests
+
+    @Test("Window title is bundle name when no folder selected")
+    func windowTitleDefaultWhenNoFolder() {
+        let controller = Controller()
+        #expect(controller.windowTitle == "Slideshow")
+    }
+
+    @Test("Window title shows folder name and index when images loaded")
+    func windowTitleShowsFolderAndIndex() throws {
+        let controller = Controller()
+        let tempDir = try createTempDirectoryWithImages(count: 3)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        controller.loadImages(from: tempDir)
+        #expect(controller.windowTitle.hasSuffix("[1/3]"))
+        #expect(controller.windowTitle.hasPrefix(tempDir.lastPathComponent))
+    }
+
+    @Test("Window title updates after navigation")
+    func windowTitleUpdatesAfterNavigation() throws {
+        let controller = Controller()
+        let tempDir = try createTempDirectoryWithImages(count: 5)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        controller.loadImages(from: tempDir)
+        #expect(controller.windowTitle.contains("[1/5]"))
+
+        controller.navigate(.next)
+        #expect(controller.windowTitle.contains("[2/5]"))
+
+        controller.navigate(.next)
+        #expect(controller.windowTitle.contains("[3/5]"))
+    }
+
+    @Test("Window title shows only folder name when no images")
+    func windowTitleShowsFolderWhenEmpty() throws {
+        let controller = Controller()
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        controller.loadImages(from: tempDir)
+        #expect(controller.windowTitle == tempDir.lastPathComponent)
+    }
+
     // MARK: - Unit Test Detection
 
     @Test("inUnitTest returns true when running tests")

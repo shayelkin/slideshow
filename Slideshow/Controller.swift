@@ -14,8 +14,10 @@ enum DisplayContent {
 final class Controller {
     private(set) var imageFiles: [URL] = []
     private(set) var currentIndex = 0
-    private(set) var folderSelected = false
     private(set) var lastError: String?
+    private(set) var currentFolder: URL?
+
+    var folderSelected: Bool { currentFolder != nil }
 
     var inUnitTest: Bool {
         return NSClassFromString("XCTestCase") != nil
@@ -34,6 +36,17 @@ final class Controller {
     var currentImage: URL? {
         assert(folderSelected || imageFiles.isEmpty)
         return imageFiles.isEmpty ? nil : imageFiles[currentIndex]
+    }
+
+    var windowTitle: String {
+        guard let folder = currentFolder else {
+            return Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? ""
+        }
+        let folderName = folder.lastPathComponent
+        guard !imageFiles.isEmpty else {
+            return folderName
+        }
+        return "\(folderName) [\(currentIndex + 1)/\(imageFiles.count)]"
     }
 
     func handleKeyPress(key: KeyEquivalent, modifiers: EventModifiers) -> Bool {
@@ -95,7 +108,7 @@ final class Controller {
 
     func loadImages(from folder: URL) {
         assert(folder.isDirectory)
-        folderSelected = true
+        currentFolder = folder
 
         let fileManager = FileManager.default
         let imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "heic", "webp"]

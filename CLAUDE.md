@@ -22,18 +22,19 @@ Slideshow is a minimal macOS SwiftUI app that displays images from a selected fo
 
 ### Architecture
 
-- **SlideshowApp.swift**: App entry point with `@main`. Contains an `AppDelegate` that forces full-screen mode on launch and handles window lifecycle.
+- **SlideshowApp.swift**: App entry point with `@main`. Contains an `AppDelegate` that handles window lifecycle.
 - **Controller.swift**: `@Observable` class holding all slideshow state and logic:
-  - Image list, current index, folder selection state
+  - Image list, current index, current folder URL
   - Key press handling and navigation (arrows/space/delete for navigation, Cmd+Return for folder selection, Esc to quit)
   - Folder selection via `NSOpenPanel` and image loading (supports jpg, jpeg, png, gif, bmp, tiff, heic, webp)
-- **ContentView.swift**: SwiftUI view that binds to `Controller` and renders the UI using `AsyncImage`.
+  - Window title with folder name and image index (e.g., "Photos [3/10]")
+- **ContentView.swift**: SwiftUI view that binds to `Controller` and renders the UI using `AsyncImage`. Sets window title via `navigationTitle` and proxy icon via `navigationDocument`.
 
 ### Key Implementation Details
 
 - Images are sorted by filename using `localizedStandardCompare`
 - Navigation wraps around (last image → first, first → last)
-- No external dependencies; pure SwiftUI + AppKit integration
+- Uses NSViewProxy package for window access (full-screen toggle)
 
 ## Testing
 
@@ -42,6 +43,6 @@ Slideshow is a minimal macOS SwiftUI app that displays images from a selected fo
 xcodebuild test -scheme Slideshow -destination 'platform=macOS'
 ```
 
-Tests are in `SlideshowTests/ControllerTests.swift` and cover key handling, navigation, and image loading.
+Tests are in `SlideshowTests/ControllerTests.swift` and cover key handling, navigation, image loading, and window title.
 
 CI runs both build and tests on push/PR to main (see `.github/workflows/xcodebuild.yml`).

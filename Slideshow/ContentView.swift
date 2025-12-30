@@ -1,6 +1,17 @@
 import SwiftUI
 import NSViewProxy
 
+extension View {
+    @ViewBuilder
+    func navigationDocument(_ url: URL?) -> some View {
+        if let url {
+            self.navigationDocument(url)
+        } else {
+            self
+        }
+    }
+}
+
 struct ContentView: View {
     @State private var controller = Controller()
     @FocusState private var hasFocus
@@ -37,6 +48,8 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusable()
         .focused($hasFocus)
+        .navigationTitle(controller.windowTitle)
+        .navigationDocument(controller.currentFolder)
         .proxy(to: .window) { window in
             guard !controller.inUnitTest else { return }
             if window.styleMask.contains(.fullScreen) == false {
