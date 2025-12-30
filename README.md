@@ -1,15 +1,22 @@
 # Slideshow
 
-A basic macOS app that displays images in a folder as a full-screen slideshow.
-
 [![xcodebuild](https://github.com/shayelkin/slideshow/actions/workflows/xcodebuild.yml/badge.svg?branch=main)](https://github.com/shayelkin/slideshow/actions/workflows/xcodebuild.yml)
+
+A basic macOS app that displays images in a folder as a full-screen slideshow.
 
 ## Usage
 
-- Build using Xcode, or `xcodebuild` from the command line.
-- In the app, Cmd+Return selectes a folder, the _right_ and _delete_ keys
-  shows the previous photo, the _left_ and _space_ keys shows the next one,
-  _esc_ exists the app.
+Build using Xcode, or `xcodebuild` from the command line.
+
+### Keyboard Shortcuts (In-App)
+
+ Key              | Action
+ -----------------|-------------
+ ⌘+⏎              | Open folder
+ space or → or ↓  | Next photo
+ ⌫ or ← or ↑      | Previous photo
+ ⎋                | Exit
+
 
 ## License
 
