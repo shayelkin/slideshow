@@ -6,12 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Build the app (from project root)
-xcodebuild clean build analyze
+xcodebuild clean build analyze -scheme Slideshow
 ```
 or
 ```bash
 # Build with prettier output (if xcpretty is installed)
-xcodebuild clean build analyze | xcpretty && exit ${PIPESTATUS[0]}
+xcodebuild clean build analyze -scheme Slideshow | xcpretty && exit ${PIPESTATUS[0]}
 ```
 
 The project can also be opened and built in Xcode directly.
