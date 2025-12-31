@@ -76,6 +76,7 @@ struct ContentView: View {
                 if !state.hasFolder || press.modifiers.contains(.command) {
                     showOpenDialog()
                 }
+                // Else will still return .handled, which is ok: it should be a no-op.
             case .escape:
                 // FIXME: use the actual window, rather than assuming it's keyWindow
                 NSApplication.shared.keyWindow?.close()
