@@ -18,7 +18,13 @@ enum DisplayContent {
 
 @Observable
 final class SlideshowState {
+    private let fs: FileSystemProvider
+
     private(set) var folder: URL?
+
+    init(fs: FileSystemProvider = RealFileSystemProvider()) {
+        self.fs = fs
+    }
 
     // Getters are internal, but made visible for tests
     private(set) var images: [URL] = []
@@ -77,30 +83,26 @@ final class SlideshowState {
 
     @MainActor
     func loadFolder(_ url: URL) async {
-        assert(url.isDirectory)
-
         folder = url
 
         images = []
         currentIndex = 0
         lastError = nil
 
-        let fileManager = FileManager.default
         let imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "heic", "webp"]
+        let fs = self.fs
 
         let result = await Task.detached {
             do {
-                let contents = try fileManager.contentsOfDirectory(
-                    at: url,
-                    includingPropertiesForKeys: [.nameKey],
-                    options: [.skipsHiddenFiles]
-                )
+                let contents = try fs.contentsOfDirectory(at: url)
 
                 let loadedImages = contents
                     .filter { url in
                         imageExtensions.contains(url.pathExtension.lowercased())
                     }
-                    .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+                    .sorted {
+                        $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
+                    }
                 return Result<[URL], Error>.success(loadedImages)
             } catch {
                 return Result<[URL], Error>.failure(error)
