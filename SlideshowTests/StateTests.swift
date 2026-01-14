@@ -15,10 +15,10 @@ final class StateTests {
     // MARK: - Navigation Tests
 
     @Test("Navigate next increments index")
-    func navigateNextIncrementsIndex() throws {
+    func navigateNextIncrementsIndex() async throws {
         let state = SlideshowState()
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.currentIndex == 0)
 
         state.navigate(.next)
@@ -26,10 +26,10 @@ final class StateTests {
     }
 
     @Test("Navigate previous decrements index")
-    func navigatePreviousDecrementsIndex() throws {
+    func navigatePreviousDecrementsIndex() async throws {
         let state = SlideshowState()
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         state.navigate(.next)
         state.navigate(.next)
         #expect(state.currentIndex == 2)
@@ -39,10 +39,10 @@ final class StateTests {
     }
 
     @Test("Navigate next wraps from last to first")
-    func navigateNextWrapsToFirst() throws {
+    func navigateNextWrapsToFirst() async throws {
         let state = SlideshowState()
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         state.navigate(.next)
         state.navigate(.next)
         #expect(state.currentIndex == 2)
@@ -52,10 +52,10 @@ final class StateTests {
     }
 
     @Test("Navigate previous wraps from first to last")
-    func navigatePreviousWrapsToLast() throws {
+    func navigatePreviousWrapsToLast() async throws {
         let state = SlideshowState()
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.currentIndex == 0)
 
         state.navigate(.previous)
@@ -77,22 +77,22 @@ final class StateTests {
     // MARK: - Load Images Tests
 
     @Test("Load images populates imageFiles array")
-    func loadImagesPopulatesArray() throws {
+    func loadImagesPopulatesArray() async throws {
         let state = SlideshowState()
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.images.count == 3)
         #expect(state.currentIndex == 0)
         #expect(state.lastError == nil)
     }
 
     @Test("Load images sorts by filename")
-    func loadImagesSortsByFilename() throws {
+    func loadImagesSortsByFilename() async throws {
         let state = SlideshowState()
         let tempDir = try createTempDirectoryWithImages(names: ["c.jpg", "a.jpg", "b.jpg"])
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.images.count == 3)
         #expect(state.images[0].lastPathComponent == "a.jpg")
         #expect(state.images[1].lastPathComponent == "b.jpg")
@@ -100,11 +100,11 @@ final class StateTests {
     }
 
     @Test("Load images filters by extension")
-    func loadImagesFiltersByExtension() throws {
+    func loadImagesFiltersByExtension() async throws {
         let state = SlideshowState()
         let tempDir = try createTempDirectoryWithImages(names: ["image.jpg", "doc.txt", "photo.png"])
         defer { try? FileManager.default.removeItem(at: tempDir) }
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.images.count == 2)
     }
 
@@ -115,12 +115,12 @@ final class StateTests {
     }
 
     @Test("Current image returns correct URL")
-    func currentImageReturnsCorrectURL() throws {
+    func currentImageReturnsCorrectURL() async throws {
         let state = SlideshowState()
         let tempDir = try createTempDirectoryWithImages(names: ["a.jpg", "b.jpg"])
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.currentImage?.lastPathComponent == "a.jpg")
 
         state.navigate(.next)
@@ -140,12 +140,12 @@ final class StateTests {
     }
 
     @Test("Display content shows image URL when folder has images")
-    func displayContentShowsImage() throws {
+    func displayContentShowsImage() async throws {
         let state = SlideshowState()
         let tempDir = try createTempDirectoryWithImages(count: 1)
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         if case .image(let url) = state.displayContent {
             #expect(url.lastPathComponent == "image0.jpg")
         } else {
@@ -154,13 +154,13 @@ final class StateTests {
     }
 
     @Test("Display content shows message when folder is empty")
-    func displayContentShowsEmptyMessage() throws {
+    func displayContentShowsEmptyMessage() async throws {
         let state = SlideshowState()
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         if case .message(let text) = state.displayContent {
             #expect(text.contains("No images"))
         } else {
@@ -169,12 +169,12 @@ final class StateTests {
     }
 
     @Test("Display content updates after navigation")
-    func displayContentUpdatesAfterNavigation() throws {
+    func displayContentUpdatesAfterNavigation() async throws {
         let state = SlideshowState()
         let tempDir = try createTempDirectoryWithImages(names: ["a.jpg", "b.jpg", "c.jpg"])
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
 
         if case .image(let url) = state.displayContent {
             #expect(url.lastPathComponent == "a.jpg")
@@ -205,7 +205,7 @@ final class StateTests {
     }
 
     @Test("Display content shows first image after loading new folder")
-    func displayContentShowsFirstImageAfterReload() throws {
+    func displayContentShowsFirstImageAfterReload() async throws {
         let state = SlideshowState()
         let tempDir1 = try createTempDirectoryWithImages(names: ["x.jpg", "y.jpg"])
         let tempDir2 = try createTempDirectoryWithImages(names: ["p.jpg", "q.jpg"])
@@ -214,13 +214,13 @@ final class StateTests {
             try? FileManager.default.removeItem(at: tempDir2)
         }
 
-        state.folder = tempDir1
+        await state.loadFolder(tempDir1)
         state.navigate(.next)
         if case .image(let url) = state.displayContent {
             #expect(url.lastPathComponent == "y.jpg")
         }
 
-        state.folder = tempDir2
+        await state.loadFolder(tempDir2)
         if case .image(let url) = state.displayContent {
             #expect(url.lastPathComponent == "p.jpg")
         } else {
@@ -237,19 +237,19 @@ final class StateTests {
     }
 
     @Test("Window title shows folder name and index when images loaded")
-    func windowTitleShowsFolderAndIndex() throws {
+    func windowTitleShowsFolderAndIndex() async throws {
         let state = SlideshowState()
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.windowTitle.hasSuffix("[1/3]"))
         #expect(state.windowTitle.hasPrefix(tempDir.lastPathComponent))
     }
 
     @Test("Window title updates after navigation")
-    func windowTitleUpdatesAfterNavigation() throws {
+    func windowTitleUpdatesAfterNavigation() async throws {
         let state = SlideshowState()
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.windowTitle.contains("[1/3]"))
 
         state.navigate(.next)
@@ -260,12 +260,12 @@ final class StateTests {
     }
 
     @Test("Window title shows only folder name when no images")
-    func windowTitleShowsFolderWhenEmpty() throws {
+    func windowTitleShowsFolderWhenEmpty() async throws {
         let state = SlideshowState()
         let tempDir = try createTempDirectoryWithImages(count: 0)
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.windowTitle == tempDir.lastPathComponent)
     }
 
@@ -280,12 +280,12 @@ final class StateTests {
     // MARK: - Edge Cases
 
     @Test("Single image navigation stays at 0")
-    func singleImageNavigationStaysAtZero() throws {
+    func singleImageNavigationStaysAtZero() async throws {
         let state = SlideshowState()
         let tempDir = try createTempDirectoryWithImages(count: 1)
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        state.folder = tempDir
+        await state.loadFolder(tempDir)
         #expect(state.currentIndex == 0)
         state.navigate(.next)
         #expect(state.currentIndex == 0)

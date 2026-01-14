@@ -93,7 +93,9 @@ struct ContentView: View {
             guard url.isDirectory else {
                 print("onOpenURL called with not a directory \(url)"); return
             }
-            state.folder = url
+            Task {
+                await state.loadFolder(url)
+            }
         }
     }
 
@@ -119,7 +121,9 @@ struct ContentView: View {
 
         panel.begin() { response in
             if response == .OK, let url = panel.url {
-                state.folder = url
+                Task {
+                    await state.loadFolder(url)
+                }
             }
         }
     }

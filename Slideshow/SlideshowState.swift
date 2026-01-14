@@ -18,7 +18,7 @@ enum DisplayContent {
 
 @Observable
 final class SlideshowState {
-    private var _folder: URL?
+    private(set) var folder: URL?
 
     // Getters are internal, but made visible for tests
     private(set) var images: [URL] = []
@@ -29,14 +29,6 @@ final class SlideshowState {
 
     // Some UI interactions break when running in CI.
     var inTestCase: Bool { NSClassFromString("XCTestCase") != nil }
-
-    var folder: URL? {
-        get { _folder }
-        set {
-            guard let newValue = newValue else { return }
-            loadFolder(newValue)
-        }
-    }
 
     var displayContent: DisplayContent {
         if let image = currentImage {
@@ -83,10 +75,12 @@ final class SlideshowState {
         assert(currentIndex < images.count)
     }
 
-    private func loadFolder(_ url: URL) {
+    @MainActor
+    func loadFolder(_ url: URL) async {
         assert(url.isDirectory)
 
-        _folder = url
+        folder = url
+
         images = []
         currentIndex = 0
         lastError = nil
@@ -94,19 +88,32 @@ final class SlideshowState {
         let fileManager = FileManager.default
         let imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "heic", "webp"]
 
-        do {
-            let contents = try fileManager.contentsOfDirectory(
-                at: _folder!,
-                includingPropertiesForKeys: [.nameKey],
-                options: [.skipsHiddenFiles]
-            )
+        let result = await Task.detached {
+            do {
+                let contents = try fileManager.contentsOfDirectory(
+                    at: url,
+                    includingPropertiesForKeys: [.nameKey],
+                    options: [.skipsHiddenFiles]
+                )
 
-            images = contents
-                .filter { url in
-                    imageExtensions.contains(url.pathExtension.lowercased())
-                }
-                .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-        } catch {
+                let loadedImages = contents
+                    .filter { url in
+                        imageExtensions.contains(url.pathExtension.lowercased())
+                    }
+                    .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+                return Result<[URL], Error>.success(loadedImages)
+            } catch {
+                return Result<[URL], Error>.failure(error)
+            }
+        }.value
+
+        // Ensure we are still loading the same folder
+        guard folder == url else { return }
+
+        switch result {
+        case .success(let loadedImages):
+            images = loadedImages
+        case .failure(let error):
             assert(images.isEmpty)
             lastError = error.localizedDescription
         }
