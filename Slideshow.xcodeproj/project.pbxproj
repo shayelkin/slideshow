@@ -10,9 +10,10 @@
 		1A0000010000000000000001 /* SlideshowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000020000000000000001 /* SlideshowApp.swift */; };
 		1A0000030000000000000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000040000000000000001 /* ContentView.swift */; };
 		1A0000050000000000000001 /* SlideshowState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000060000000000000001 /* SlideshowState.swift */; };
-		1A0000200000000000000001 /* StateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000210000000000000001 /* StateTests.swift */; };
+		1A0000200000000000000001 /* SlideshowStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000210000000000000001 /* SlideshowStateTests.swift */; };
 		1A00002C0000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A00002D0000000000000001 /* Assets.xcassets */; };
 		FE515CC92F03CFA1005EED50 /* NSViewProxy in Frameworks */ = {isa = PBXBuildFile; productRef = FE515CC82F03CFA1005EED50 /* NSViewProxy */; };
+		FEF57CCC2F17493300F11A90 /* FileSystemProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEF57CCB2F17493300F11A90 /* FileSystemProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,9 +33,10 @@
 		1A0000070000000000000001 /* Slideshow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slideshow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A0000080000000000000001 /* Slideshow.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Slideshow.entitlements; sourceTree = "<group>"; };
 		1A00001C0000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		1A0000210000000000000001 /* StateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateTests.swift; sourceTree = "<group>"; };
+		1A0000210000000000000001 /* SlideshowStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideshowStateTests.swift; sourceTree = "<group>"; };
 		1A0000230000000000000001 /* SlideshowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SlideshowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A00002D0000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FEF57CCB2F17493300F11A90 /* FileSystemProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSystemProvider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +73,7 @@
 				1A0000020000000000000001 /* SlideshowApp.swift */,
 				1A0000040000000000000001 /* ContentView.swift */,
 				1A0000060000000000000001 /* SlideshowState.swift */,
+				FEF57CCB2F17493300F11A90 /* FileSystemProvider.swift */,
 				1A00002D0000000000000001 /* Assets.xcassets */,
 				1A0000080000000000000001 /* Slideshow.entitlements */,
 				1A00001C0000000000000001 /* Info.plist */,
@@ -90,7 +93,7 @@
 		1A0000250000000000000001 /* SlideshowTests */ = {
 			isa = PBXGroup;
 			children = (
-				1A0000210000000000000001 /* StateTests.swift */,
+				1A0000210000000000000001 /* SlideshowStateTests.swift */,
 			);
 			path = SlideshowTests;
 			sourceTree = "<group>";
@@ -192,6 +195,7 @@
 				1A0000010000000000000001 /* SlideshowApp.swift in Sources */,
 				1A0000030000000000000001 /* ContentView.swift in Sources */,
 				1A0000050000000000000001 /* SlideshowState.swift in Sources */,
+				FEF57CCC2F17493300F11A90 /* FileSystemProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -199,7 +203,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A0000200000000000000001 /* StateTests.swift in Sources */,
+				1A0000200000000000000001 /* SlideshowStateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -2,23 +2,53 @@ import Testing
 import SwiftUI
 @testable import Slideshow
 
-@Suite("State Tests")
-final class StateTests {
-    lazy var tempDir: URL = {
-        try! createTempDirectoryWithImages(count: 3)
-    }()
+final class InMemoryFileSystemProvider: FileSystemProvider {
+    private let files: [URL]?
+    private let folderContents: [URL: [URL]]?
 
-    deinit {
-        try? FileManager.default.removeItem(at: tempDir)
+    // Mode 1: Always return the same files regardless of directory
+    init(_ files: [URL]) {
+        self.files = files
+        self.folderContents = nil
+    }
+
+    // Mode 2: Return files based on the requested directory URL
+    init(folders: [URL: [URL]]) {
+        self.files = nil
+        self.folderContents = folders
+    }
+
+    func contentsOfDirectory(at url: URL) throws -> [URL] {
+        if let files = files {
+            return files
+        }
+        if let contents = folderContents?[url] {
+            return contents
+        }
+        throw NSError(domain: NSCocoaErrorDomain, code: NSFileReadNoSuchFileError, userInfo: nil)
+    }
+}
+
+@Suite("State Tests")
+final class SlideshowStateTests {
+    // Helper to create mock file URLs
+    func mockFiles(_ names: [String]) -> [URL] {
+        names.map { URL(fileURLWithPath: "/mock/\($0)") }
+    }
+    
+    // Helper to provide a folder URL that satisfies internal assertions (exists on disk)
+    var dummyFolder: URL {
+        FileManager.default.temporaryDirectory
     }
 
     // MARK: - Navigation Tests
 
     @Test("Navigate next increments index")
     func navigateNextIncrementsIndex() async throws {
-        let state = SlideshowState()
+        let files = mockFiles(["a.jpg", "b.jpg", "c.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         #expect(state.currentIndex == 0)
 
         state.navigate(.next)
@@ -27,9 +57,10 @@ final class StateTests {
 
     @Test("Navigate previous decrements index")
     func navigatePreviousDecrementsIndex() async throws {
-        let state = SlideshowState()
+        let files = mockFiles(["a.jpg", "b.jpg", "c.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         state.navigate(.next)
         state.navigate(.next)
         #expect(state.currentIndex == 2)
@@ -40,9 +71,10 @@ final class StateTests {
 
     @Test("Navigate next wraps from last to first")
     func navigateNextWrapsToFirst() async throws {
-        let state = SlideshowState()
+        let files = mockFiles(["a.jpg", "b.jpg", "c.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         state.navigate(.next)
         state.navigate(.next)
         #expect(state.currentIndex == 2)
@@ -53,9 +85,10 @@ final class StateTests {
 
     @Test("Navigate previous wraps from first to last")
     func navigatePreviousWrapsToLast() async throws {
-        let state = SlideshowState()
+        let files = mockFiles(["a.jpg", "b.jpg", "c.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         #expect(state.currentIndex == 0)
 
         state.navigate(.previous)
@@ -64,7 +97,7 @@ final class StateTests {
 
     @Test("Navigate with empty images does nothing")
     func navigateEmptyImagesDoesNothing() {
-        let state = SlideshowState()
+        let state = SlideshowState(fs: InMemoryFileSystemProvider([]))
         #expect(state.currentIndex == 0)
 
         state.navigate(.next)
@@ -78,9 +111,10 @@ final class StateTests {
 
     @Test("Load images populates imageFiles array")
     func loadImagesPopulatesArray() async throws {
-        let state = SlideshowState()
+        let files = mockFiles(["1.jpg", "2.jpg", "3.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         #expect(state.images.count == 3)
         #expect(state.currentIndex == 0)
         #expect(state.lastError == nil)
@@ -88,11 +122,10 @@ final class StateTests {
 
     @Test("Load images sorts by filename")
     func loadImagesSortsByFilename() async throws {
-        let state = SlideshowState()
-        let tempDir = try createTempDirectoryWithImages(names: ["c.jpg", "a.jpg", "b.jpg"])
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let files = mockFiles(["c.jpg", "a.jpg", "b.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         #expect(state.images.count == 3)
         #expect(state.images[0].lastPathComponent == "a.jpg")
         #expect(state.images[1].lastPathComponent == "b.jpg")
@@ -101,26 +134,25 @@ final class StateTests {
 
     @Test("Load images filters by extension")
     func loadImagesFiltersByExtension() async throws {
-        let state = SlideshowState()
-        let tempDir = try createTempDirectoryWithImages(names: ["image.jpg", "doc.txt", "photo.png"])
-        defer { try? FileManager.default.removeItem(at: tempDir) }
-        await state.loadFolder(tempDir)
+        let files = mockFiles(["image.jpg", "doc.txt", "photo.png"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
+        
+        await state.loadFolder(dummyFolder)
         #expect(state.images.count == 2)
     }
 
     @Test("Current image returns nil when empty")
     func currentImageNilWhenEmpty() {
-        let state = SlideshowState()
+        let state = SlideshowState(fs: InMemoryFileSystemProvider([]))
         #expect(state.currentImage == nil)
     }
 
     @Test("Current image returns correct URL")
     func currentImageReturnsCorrectURL() async throws {
-        let state = SlideshowState()
-        let tempDir = try createTempDirectoryWithImages(names: ["a.jpg", "b.jpg"])
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let files = mockFiles(["a.jpg", "b.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         #expect(state.currentImage?.lastPathComponent == "a.jpg")
 
         state.navigate(.next)
@@ -131,7 +163,7 @@ final class StateTests {
 
     @Test("Display content shows prompt when no folder selected")
     func displayContentShowsPrompt() {
-        let state = SlideshowState()
+        let state = SlideshowState(fs: InMemoryFileSystemProvider([]))
         if case .message(let text) = state.displayContent {
             #expect(text.contains("open a folder"))
         } else {
@@ -141,11 +173,10 @@ final class StateTests {
 
     @Test("Display content shows image URL when folder has images")
     func displayContentShowsImage() async throws {
-        let state = SlideshowState()
-        let tempDir = try createTempDirectoryWithImages(count: 1)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let files = mockFiles(["image0.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         if case .image(let url) = state.displayContent {
             #expect(url.lastPathComponent == "image0.jpg")
         } else {
@@ -155,12 +186,9 @@ final class StateTests {
 
     @Test("Display content shows message when folder is empty")
     func displayContentShowsEmptyMessage() async throws {
-        let state = SlideshowState()
-        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let state = SlideshowState(fs: InMemoryFileSystemProvider([]))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         if case .message(let text) = state.displayContent {
             #expect(text.contains("No images"))
         } else {
@@ -170,11 +198,10 @@ final class StateTests {
 
     @Test("Display content updates after navigation")
     func displayContentUpdatesAfterNavigation() async throws {
-        let state = SlideshowState()
-        let tempDir = try createTempDirectoryWithImages(names: ["a.jpg", "b.jpg", "c.jpg"])
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let files = mockFiles(["a.jpg", "b.jpg", "c.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
 
         if case .image(let url) = state.displayContent {
             #expect(url.lastPathComponent == "a.jpg")
@@ -206,21 +233,23 @@ final class StateTests {
 
     @Test("Display content shows first image after loading new folder")
     func displayContentShowsFirstImageAfterReload() async throws {
-        let state = SlideshowState()
-        let tempDir1 = try createTempDirectoryWithImages(names: ["x.jpg", "y.jpg"])
-        let tempDir2 = try createTempDirectoryWithImages(names: ["p.jpg", "q.jpg"])
-        defer {
-            try? FileManager.default.removeItem(at: tempDir1)
-            try? FileManager.default.removeItem(at: tempDir2)
-        }
+        let dir1 = URL(fileURLWithPath: "/mock/dir1")
+        let dir2 = URL(fileURLWithPath: "/mock/dir2")
+        
+        let fs = InMemoryFileSystemProvider(folders: [
+            dir1: mockFiles(["x.jpg", "y.jpg"]),
+            dir2: mockFiles(["p.jpg", "q.jpg"])
+        ])
+        
+        let state = SlideshowState(fs: fs)
 
-        await state.loadFolder(tempDir1)
+        await state.loadFolder(dir1)
         state.navigate(.next)
         if case .image(let url) = state.displayContent {
             #expect(url.lastPathComponent == "y.jpg")
         }
 
-        await state.loadFolder(tempDir2)
+        await state.loadFolder(dir2)
         if case .image(let url) = state.displayContent {
             #expect(url.lastPathComponent == "p.jpg")
         } else {
@@ -232,24 +261,26 @@ final class StateTests {
 
     @Test("Window title is bundle name when no folder selected")
     func windowTitleDefaultWhenNoFolder() {
-        let state = SlideshowState()
+        let state = SlideshowState(fs: InMemoryFileSystemProvider([]))
         #expect(state.windowTitle == "Slideshow")
     }
 
     @Test("Window title shows folder name and index when images loaded")
     func windowTitleShowsFolderAndIndex() async throws {
-        let state = SlideshowState()
+        let files = mockFiles(["a.jpg", "b.jpg", "c.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         #expect(state.windowTitle.hasSuffix("[1/3]"))
-        #expect(state.windowTitle.hasPrefix(tempDir.lastPathComponent))
+        #expect(state.windowTitle.hasPrefix(dummyFolder.lastPathComponent))
     }
 
     @Test("Window title updates after navigation")
     func windowTitleUpdatesAfterNavigation() async throws {
-        let state = SlideshowState()
+        let files = mockFiles(["a.jpg", "b.jpg", "c.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         #expect(state.windowTitle.contains("[1/3]"))
 
         state.navigate(.next)
@@ -261,19 +292,17 @@ final class StateTests {
 
     @Test("Window title shows only folder name when no images")
     func windowTitleShowsFolderWhenEmpty() async throws {
-        let state = SlideshowState()
-        let tempDir = try createTempDirectoryWithImages(count: 0)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let state = SlideshowState(fs: InMemoryFileSystemProvider([]))
 
-        await state.loadFolder(tempDir)
-        #expect(state.windowTitle == tempDir.lastPathComponent)
+        await state.loadFolder(dummyFolder)
+        #expect(state.windowTitle == dummyFolder.lastPathComponent)
     }
 
     // MARK: - Unit Test Detection
 
     @Test("inTestCase returns true when running tests")
     func inTestCaseReturnsTrue() {
-        let state = SlideshowState()
+        let state = SlideshowState(fs: InMemoryFileSystemProvider([]))
         #expect(state.inTestCase == true)
     }
 
@@ -281,31 +310,14 @@ final class StateTests {
 
     @Test("Single image navigation stays at 0")
     func singleImageNavigationStaysAtZero() async throws {
-        let state = SlideshowState()
-        let tempDir = try createTempDirectoryWithImages(count: 1)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let files = mockFiles(["a.jpg"])
+        let state = SlideshowState(fs: InMemoryFileSystemProvider(files))
 
-        await state.loadFolder(tempDir)
+        await state.loadFolder(dummyFolder)
         #expect(state.currentIndex == 0)
         state.navigate(.next)
         #expect(state.currentIndex == 0)
         state.navigate(.previous)
         #expect(state.currentIndex == 0)
     }
-}
-
-private func createTempDirectoryWithImages(count: Int) throws -> URL {
-    let names = (0..<count).map { "image\($0).jpg" }
-    return try createTempDirectoryWithImages(names: names)
-}
-
-private func createTempDirectoryWithImages(names: [String]) throws -> URL {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-
-    for name in names {
-        try Data().write(to: tempDir.appendingPathComponent(name))
-    }
-
-    return tempDir
 }
